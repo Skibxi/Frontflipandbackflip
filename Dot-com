@@ -1,184 +1,181 @@
 local sausageHolder = game.CoreGui.TopBarApp.TopBarApp.UnibarLeftFrame.UnibarMenu["2"]
 local originalSize = sausageHolder.Size.X.Offset
-local sSize = UDim2.new(0, originalSize + 96, 0, sausageHolder.Size.Y.Offset) -- Increased by 96 for 2 buttons
+local sSize = UDim2.new(0, originalSize + 96, 0, sausageHolder.Size.Y.Offset)
 
--- First button (Frontflip - F)
 local buttonFrame1 = Instance.new("Frame", sausageHolder)
-		buttonFrame1.Size = UDim2.new(0, 48, 0, 44)
-		buttonFrame1.BackgroundTransparency = 1
-		buttonFrame1.BorderSizePixel = 0
-		buttonFrame1.Position = UDim2.new(0, sausageHolder.Size.X.Offset - 48, 0, 0)
+buttonFrame1.Size = UDim2.new(0, 48, 0, 44)
+buttonFrame1.BackgroundTransparency = 1
+buttonFrame1.BorderSizePixel = 0
+buttonFrame1.Position = UDim2.new(0, sausageHolder.Size.X.Offset - 48, 0, 0)
 local imageButton1 = Instance.new("ImageButton", buttonFrame1)
-		imageButton1.BackgroundTransparency = 1
-		imageButton1.BorderSizePixel = 0
-		imageButton1.Size = UDim2.new(0, 36, 0, 36)
-		imageButton1.AnchorPoint = Vector2.new(0.5, 0.5)
-		imageButton1.Position = UDim2.new(0.5, 0, 0.5, 0)
-		imageButton1.Image = "http://www.roblox.com/asset/?id=131523679474566"
+imageButton1.BackgroundTransparency = 1
+imageButton1.BorderSizePixel = 0
+imageButton1.Size = UDim2.new(0, 36, 0, 36)
+imageButton1.AnchorPoint = Vector2.new(0.5, 0.5)
+imageButton1.Position = UDim2.new(0.5, 0, 0.5, 0)
+imageButton1.Image = "http://www.roblox.com/asset/?id=131523679474566"
 
--- Second button (Backflip - B)
 local buttonFrame2 = Instance.new("Frame", sausageHolder)
-		buttonFrame2.Size = UDim2.new(0, 48, 0, 44)
-		buttonFrame2.BackgroundTransparency = 1
-		buttonFrame2.BorderSizePixel = 0
-		buttonFrame2.Position = UDim2.new(0, sausageHolder.Size.X.Offset - 96, 0, 0)
+buttonFrame2.Size = UDim2.new(0, 48, 0, 44)
+buttonFrame2.BackgroundTransparency = 1
+buttonFrame2.BorderSizePixel = 0
+buttonFrame2.Position = UDim2.new(0, sausageHolder.Size.X.Offset - 96, 0, 0)
 local imageButton2 = Instance.new("ImageButton", buttonFrame2)
-		imageButton2.BackgroundTransparency = 1
-		imageButton2.BorderSizePixel = 0
-		imageButton2.Size = UDim2.new(0, 36, 0, 36)
-		imageButton2.AnchorPoint = Vector2.new(0.5, 0.5)
-		imageButton2.Position = UDim2.new(0.5, 0, 0.5, 0)
-		imageButton2.Image = "rbxassetid://107115000634942" -- Custom backflip image
+imageButton2.BackgroundTransparency = 1
+imageButton2.BorderSizePixel = 0
+imageButton2.Size = UDim2.new(0, 36, 0, 36)
+imageButton2.AnchorPoint = Vector2.new(0.5, 0.5)
+imageButton2.Position = UDim2.new(0.5, 0, 0.5, 0)
+imageButton2.Image = "rbxassetid://107115000634942"
 
 local FlipCooldown = false
 
 local function FortniteFrontflip()
-		if FlipCooldown then
-			return
+	if FlipCooldown then
+		return
+	end
+
+	FlipCooldown = true
+	local character = game:GetService("Players").LocalPlayer.Character
+	local hrp = character and character:FindFirstChild("HumanoidRootPart")
+	local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+	local animator = humanoid and humanoid:FindFirstChildOfClass("Animator")
+	if not hrp or not humanoid then
+		FlipCooldown = false
+		return
+	end
+
+	local savedTracks = {}
+
+	if animator then
+		for _, track in ipairs(animator:GetPlayingAnimationTracks()) do
+			savedTracks[#savedTracks + 1] = { track = track, time = track.TimePosition }
+			track:Stop(0)
+		end
+	end
+
+	humanoid:ChangeState(Enum.HumanoidStateType.Physics)
+	humanoid:SetStateEnabled(Enum.HumanoidStateType.FallingDown, false)
+	humanoid:SetStateEnabled(Enum.HumanoidStateType.Freefall, false)
+	humanoid:SetStateEnabled(Enum.HumanoidStateType.Running, false)
+	humanoid:SetStateEnabled(Enum.HumanoidStateType.Seated, false)
+	humanoid:SetStateEnabled(Enum.HumanoidStateType.Climbing, false)
+
+	local duration = 0.45
+	local steps = 120
+	local startCFrame = hrp.CFrame
+	local forwardVector = startCFrame.LookVector
+	local upVector = Vector3.new(0, 1, 0)
+	task.spawn(function()
+		local startTime = tick()
+		for i = 1, steps do
+			local t = i / steps
+			local height = 4 * (t - t ^ 2) * 10
+			local nextPos = startCFrame.Position + forwardVector * (35 * t) + upVector * height
+			local rotation = startCFrame.Rotation * CFrame.Angles(-math.rad(i * (360 / steps)), 0, 0)
+
+			hrp.CFrame = CFrame.new(nextPos) * rotation
+			local elapsedTime = tick() - startTime
+			local expectedTime = (duration / steps) * i
+			local waitTime = expectedTime - elapsedTime
+			if waitTime > 0 then
+				task.wait(waitTime)
+			end
 		end
 
-		FlipCooldown = true
-		local character = game:GetService("Players").LocalPlayer.Character
-		local hrp = character and character:FindFirstChild("HumanoidRootPart")
-		local humanoid = character and character:FindFirstChildOfClass("Humanoid")
-		local animator = humanoid and humanoid:FindFirstChildOfClass("Animator")
-		if not hrp or not humanoid then
-			FlipCooldown = false
-			return
-		end
-
-		local savedTracks = {}
+		hrp.CFrame = CFrame.new(startCFrame.Position + forwardVector * 35) * startCFrame.Rotation
+		humanoid:SetStateEnabled(Enum.HumanoidStateType.FallingDown, true)
+		humanoid:SetStateEnabled(Enum.HumanoidStateType.Freefall, true)
+		humanoid:SetStateEnabled(Enum.HumanoidStateType.Running, true)
+		humanoid:SetStateEnabled(Enum.HumanoidStateType.Seated, true)
+		humanoid:SetStateEnabled(Enum.HumanoidStateType.Climbing, true)
+		humanoid:ChangeState(Enum.HumanoidStateType.Running)
 
 		if animator then
-			for _, track in ipairs(animator:GetPlayingAnimationTracks()) do
-				savedTracks[#savedTracks + 1] = { track = track, time = track.TimePosition }
-				track:Stop(0)
+			for _, data in ipairs(savedTracks) do
+				local track = data.track
+				track:Play()
+				track.TimePosition = data.time
 			end
 		end
-
-		humanoid:ChangeState(Enum.HumanoidStateType.Physics)
-		humanoid:SetStateEnabled(Enum.HumanoidStateType.FallingDown, false)
-		humanoid:SetStateEnabled(Enum.HumanoidStateType.Freefall, false)
-		humanoid:SetStateEnabled(Enum.HumanoidStateType.Running, false)
-		humanoid:SetStateEnabled(Enum.HumanoidStateType.Seated, false)
-		humanoid:SetStateEnabled(Enum.HumanoidStateType.Climbing, false)
-
-		local duration = 0.45
-		local steps = 120
-		local startCFrame = hrp.CFrame
-		local forwardVector = startCFrame.LookVector
-		local upVector = Vector3.new(0, 1, 0)
-		task.spawn(function()
-			local startTime = tick()
-			for i = 1, steps do
-				local t = i / steps
-				local height = 4 * (t - t ^ 2) * 10
-				local nextPos = startCFrame.Position + forwardVector * (35 * t) + upVector * height
-				local rotation = startCFrame.Rotation * CFrame.Angles(-math.rad(i * (360 / steps)), 0, 0)
-
-				hrp.CFrame = CFrame.new(nextPos) * rotation
-				local elapsedTime = tick() - startTime
-				local expectedTime = (duration / steps) * i
-				local waitTime = expectedTime - elapsedTime
-				if waitTime > 0 then
-					task.wait(waitTime)
-				end
-			end
-
-			hrp.CFrame = CFrame.new(startCFrame.Position + forwardVector * 35) * startCFrame.Rotation
-			humanoid:SetStateEnabled(Enum.HumanoidStateType.FallingDown, true)
-			humanoid:SetStateEnabled(Enum.HumanoidStateType.Freefall, true)
-			humanoid:SetStateEnabled(Enum.HumanoidStateType.Running, true)
-			humanoid:SetStateEnabled(Enum.HumanoidStateType.Seated, true)
-			humanoid:SetStateEnabled(Enum.HumanoidStateType.Climbing, true)
-			humanoid:ChangeState(Enum.HumanoidStateType.Running)
-
-			if animator then
-				for _, data in ipairs(savedTracks) do
-					local track = data.track
-					track:Play()
-					track.TimePosition = data.time
-				end
-			end
-			task.wait(0.25)
-			FlipCooldown = false
-		end)
-	end
+		task.wait(0.25)
+		FlipCooldown = false
+	end)
+end
 
 local function FortniteBackflip()
-		if FlipCooldown then
-			return
-		end
-
-		FlipCooldown = true
-		local character = game:GetService("Players").LocalPlayer.Character
-		local hrp = character and character:FindFirstChild("HumanoidRootPart")
-		local humanoid = character and character:FindFirstChildOfClass("Humanoid")
-		local animator = humanoid and humanoid:FindFirstChildOfClass("Animator")
-		if not hrp or not humanoid then
-			FlipCooldown = false
-			return
-		end
-
-		local savedTracks = {}
-
-		if animator then
-			for _, track in ipairs(animator:GetPlayingAnimationTracks()) do
-				savedTracks[#savedTracks + 1] = { track = track, time = track.TimePosition }
-				track:Stop(0)
-			end
-		end
-
-		humanoid:ChangeState(Enum.HumanoidStateType.Physics)
-		humanoid:SetStateEnabled(Enum.HumanoidStateType.FallingDown, false)
-		humanoid:SetStateEnabled(Enum.HumanoidStateType.Freefall, false)
-		humanoid:SetStateEnabled(Enum.HumanoidStateType.Running, false)
-		humanoid:SetStateEnabled(Enum.HumanoidStateType.Seated, false)
-		humanoid:SetStateEnabled(Enum.HumanoidStateType.Climbing, false)
-
-		local duration = 0.45
-		local steps = 120
-		local startCFrame = hrp.CFrame
-		local forwardVector = startCFrame.LookVector
-		local upVector = Vector3.new(0, 1, 0)
-		task.spawn(function()
-			local startTime = tick()
-			for i = 1, steps do
-				local t = i / steps
-				local height = 4 * (t - t ^ 2) * 10
-				local nextPos = startCFrame.Position - forwardVector * (25 * t) + upVector * height -- Move backward
-				local rotation = startCFrame.Rotation * CFrame.Angles(math.rad(i * (360 / steps)), 0, 0) -- Positive angle for backflip
-
-				hrp.CFrame = CFrame.new(nextPos) * rotation
-				local elapsedTime = tick() - startTime
-				local expectedTime = (duration / steps) * i
-				local waitTime = expectedTime - elapsedTime
-				if waitTime > 0 then
-					task.wait(waitTime)
-				end
-			end
-
-			hrp.CFrame = CFrame.new(startCFrame.Position - forwardVector * 25) * startCFrame.Rotation -- End position backward
-			humanoid:SetStateEnabled(Enum.HumanoidStateType.FallingDown, true)
-			humanoid:SetStateEnabled(Enum.HumanoidStateType.Freefall, true)
-			humanoid:SetStateEnabled(Enum.HumanoidStateType.Running, true)
-			humanoid:SetStateEnabled(Enum.HumanoidStateType.Seated, true)
-			humanoid:SetStateEnabled(Enum.HumanoidStateType.Climbing, true)
-			humanoid:ChangeState(Enum.HumanoidStateType.Running)
-
-			if animator then
-				for _, data in ipairs(savedTracks) do
-					local track = data.track
-					track:Play()
-					track.TimePosition = data.time
-				end
-			end
-			task.wait(0.25)
-			FlipCooldown = false
-		end)
+	if FlipCooldown then
+		return
 	end
 
--- Connect buttons
+	FlipCooldown = true
+	local character = game:GetService("Players").LocalPlayer.Character
+	local hrp = character and character:FindFirstChild("HumanoidRootPart")
+	local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+	local animator = humanoid and humanoid:FindFirstChildOfClass("Animator")
+	if not hrp or not humanoid then
+		FlipCooldown = false
+		return
+	end
+
+	local savedTracks = {}
+
+	if animator then
+		for _, track in ipairs(animator:GetPlayingAnimationTracks()) do
+			savedTracks[#savedTracks + 1] = { track = track, time = track.TimePosition }
+			track:Stop(0)
+		end
+	end
+
+	humanoid:ChangeState(Enum.HumanoidStateType.Physics)
+	humanoid:SetStateEnabled(Enum.HumanoidStateType.FallingDown, false)
+	humanoid:SetStateEnabled(Enum.HumanoidStateType.Freefall, false)
+	humanoid:SetStateEnabled(Enum.HumanoidStateType.Running, false)
+	humanoid:SetStateEnabled(Enum.HumanoidStateType.Seated, false)
+	humanoid:SetStateEnabled(Enum.HumanoidStateType.Climbing, false)
+
+	local duration = 0.45
+	local steps = 120
+	local startCFrame = hrp.CFrame
+	local forwardVector = startCFrame.LookVector
+	local upVector = Vector3.new(0, 1, 0)
+	task.spawn(function()
+		local startTime = tick()
+		for i = 1, steps do
+			local t = i / steps
+			local height = 4 * (t - t ^ 2) * 10
+			local nextPos = startCFrame.Position - forwardVector * (25 * t) + upVector * height
+			local rotation = startCFrame.Rotation * CFrame.Angles(math.rad(i * (360 / steps)), 0, 0)
+
+			hrp.CFrame = CFrame.new(nextPos) * rotation
+			local elapsedTime = tick() - startTime
+			local expectedTime = (duration / steps) * i
+			local waitTime = expectedTime - elapsedTime
+			if waitTime > 0 then
+				task.wait(waitTime)
+			end
+		end
+
+		hrp.CFrame = CFrame.new(startCFrame.Position - forwardVector * 25) * startCFrame.Rotation
+		humanoid:SetStateEnabled(Enum.HumanoidStateType.FallingDown, true)
+		humanoid:SetStateEnabled(Enum.HumanoidStateType.Freefall, true)
+		humanoid:SetStateEnabled(Enum.HumanoidStateType.Running, true)
+		humanoid:SetStateEnabled(Enum.HumanoidStateType.Seated, true)
+		humanoid:SetStateEnabled(Enum.HumanoidStateType.Climbing, true)
+		humanoid:ChangeState(Enum.HumanoidStateType.Running)
+
+		if animator then
+			for _, data in ipairs(savedTracks) do
+				local track = data.track
+				track:Play()
+				track.TimePosition = data.time
+			end
+		end
+		task.wait(0.25)
+		FlipCooldown = false
+	end)
+end
+
 imageButton1.Activated:Connect(FortniteFrontflip)
 imageButton2.Activated:Connect(FortniteBackflip)
 
